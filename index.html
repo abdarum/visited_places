@@ -1,58 +1,102 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+
 <head>
     <title>Visited Places</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch; /* Dostosuj szerokość mapy do szerokości ekranu */
+        }
+
+        h1 {
+            margin: 0;
+            padding: 10px;
+        }
+
+        #map1 {
+            flex: 1;
+        }
+    </style>
     <script src="d3/d3.v3.min.js"></script>
     <script src="d3/topojson.v1.min.js"></script>
-    <script src="datamaps/datamaps.world.min.js"></script>
+    <script src="datamaps/datamaps.world.hires.min.js"></script>
 </head>
+
 <body>
     <h1>Visited Places</h1>
-    <div id="map1" style="position: relative;"></div>
+
+    <div id="map1"></div>
 
     <script src="countries.js"></script>
     <script src="cities.js"></script>
+    <script src="update_data.js"></script>
 
     <script>
+        var UPDATED_CITIES = updateCityData(CITIES)
 
-    var map = new Datamap({
-        scope: 'world',
-        element: document.getElementById('map1'),
-        projection: 'mercator',
-        responsive: true,
-        height: 700,
-        fills: {
-            defaultFill: '#D0D0D0',
-            visited: '#B0B0B0',
-            city: '#FC8050'
-        },
-        geographyConfig: {
-            highlightOnHover: true,
-            highlightFillColor: '#A0C0A0',
-            highlightBorderColor: '#F0F0F0',
-            popupOnHover: true,
-            popupTemplate: function(geography, data) {
-                return '<div class="hoverinfo"><b>' + geography.properties.name + '</b></div>';
+        // TODO: Should be centered automatically based on points
+        var initialCenter = [-3.29, 55.94];
+        var initialScale = 1000;
+
+        var screenHeight = window.innerHeight;
+
+        var map = new Datamap({
+            scope: 'world',
+            element: document.getElementById('map1'),
+            projection: 'mercator',
+            responsive: true,
+            height: screenHeight - 60,
+            fills: {
+                defaultFill: '#D0D0D0',
+                visited: '#B0B0B0',
+                city: '#FC8050'
             },
-        },
-        bubblesConfig: {
-            borderWidth: 1,
-            borderColor: '#FFFFFF',
-            highlightOnHover: true,
-            popupOnHover: true,
-            popupTemplate: function(geo, data) {
-                return "<div class='hoverinfo'>" + data.name + ":<br>" + data.date + "</div>";
-            }
-        },
+            geographyConfig: {
+                highlightOnHover: true,
+                highlightFillColor: '#A0C0A0',
+                highlightBorderColor: '#F0F0F0',
+                popupOnHover: true,
+                popupTemplate: function (geography, data) {
+                    return '<div class="hoverinfo"><b>' + geography.properties.name + '</b></div>';
+                },
+            },
+            bubblesConfig: {
+                borderWidth: 1,
+                borderColor: '#FFFFFF',
+                highlightOnHover: true,
+                popupOnHover: true,
+                popupTemplate: function (geo, data) {
+                    return "<div class='hoverinfo'>" + data.name + ":<br>" + data.date + "</div>";
+                }
+            },
+            setProjection: function (element) {
+                var projection = d3.geo.mercator()
+                    .center(initialCenter)
+                    .scale(initialScale);
+                var path = d3.geo.path().projection(projection);
+                return { path: path, projection: projection };
+            },
+            data: COUNTRIES
+        });
 
-        data: COUNTRIES
-    });
+        map.bubbles(UPDATED_CITIES);
 
-    map.bubbles(CITIES);
+        map.svg.call(d3.behavior.zoom()
+            .on("zoom", function () {
+                map.svg.selectAll("g").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+            }));
 
-    window.addEventListener('resize', function() {
-        map.resize();
-    });
+        window.addEventListener('resize', function () {
+            screenHeight = window.innerHeight;
+            map.resize();
+        });
 
     </script>
 </body>
+</html>

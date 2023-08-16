@@ -1,0 +1,11 @@
+# Usage:
+#   docker-compose up --detach
+version: "3"
+
+services:
+    client:
+        image: nginx
+        ports:
+            - 8000:80
+        volumes:
+            - .:/usr/share/nginx/html
